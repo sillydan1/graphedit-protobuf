@@ -2,3 +2,12 @@ Debug
 Release
 .cache
 **/compile_commands.json
+.gradle
+gradlew
+gradlew.bat
+gradle
+build
+.classpath
+.project
+.settings
+**/.DS_Store
