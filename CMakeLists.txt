@@ -1,7 +1,7 @@
 find_package(protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(Threads)
-set(PROTO_FILES lsp.proto)
+set(PROTO_FILES src/main/proto/lsp.proto)
 add_library(graphedit_proto ${PROTO_FILES})
 target_link_libraries(graphedit_proto PUBLIC protobuf::libprotobuf gRPC::grpc gRPC::grpc++)
 target_include_directories(graphedit_proto PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${spdlog_SOURCE_DIR}/include)

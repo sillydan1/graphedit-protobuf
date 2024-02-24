@@ -84,13 +84,21 @@ message ServerInfo {
 }
 
 enum Capability {
+    // Whether if the server can handle diff-based communication
     CAPABILITY_DIFFS = 0;
+    // Whether if the server can provide diagnostics feedback
     CAPABILITY_DIAGNOSTICS = 1;
+    // Whether if the server can provide notifications
     CAPABILITY_NOTIFICATIONS = 2;
+    // Whether if the server can provide progress reports
     CAPABILITY_PROGRESS = 3;
+    // Whether if the server can handle reconnection events (reserved)
     CAPABILITY_RECONNECT = 4;
+    // Whether if the server can provide modelling actions / shortcuts (reserved)
     CAPABILITY_ACTIONS = 5;
+    // Whether if the server can interactively debug (reserved)
     CAPABILITY_DEBUGGING = 6;
+    // Whether if the server can handle project-based workflows, opposed to single-file workflows
     CAPABILITY_PROJECT = 7;
 }
 
