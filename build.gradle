@@ -1,0 +1,160 @@
+plugins {
+    id 'java';
+    id 'com.google.protobuf' version '0.9.4';
+    id 'maven-publish';
+    id 'signing';
+}
+
+def gitCommitSha = { ->
+    def stdout = new ByteArrayOutputStream();
+    exec {
+        commandLine 'git', 'describe', '--long', '--always', '--dirty', '--exclude=*', '--abbrev=8';
+        standardOutput = stdout;
+    }
+    return stdout.toString().trim();
+}
+
+def gitHeadName = { ->
+    def stdout = new ByteArrayOutputStream();
+    def stderr = new ByteArrayOutputStream();
+    def result = exec {
+        commandLine 'git', 'describe', '--tags', '--exact-match'
+        standardOutput = stdout;
+        errorOutput = stderr;
+        ignoreExitValue = true;
+    }
+    if(result.exitValue == 0)
+        return stdout.toString().trim();
+
+    stdout.reset();
+    stderr.reset();
+    exec {
+        commandLine 'git', 'symbolic-ref', '-q', '--short', 'HEAD'
+        standardOutput = stdout;
+        errorOutput = stderr;
+        ignoreExitValue = true;
+    }
+    return stdout.toString().trim();
+}
+
+def getVersion = { ->
+    def version = '1.0.0';
+    if(gitHeadName().equals('v'+version))
+        return version;
+    if(gitHeadName().equals('main'))
+        return version;
+    return version + '+' + gitCommitSha() + '-SNAPSHOT';
+}
+
+group 'dk.gtz.graphedit'
+version getVersion()
+
+// Some extra information. Useful for debugging the CI
+def releasesRepoUrl = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/';
+def snapshotsRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/';
+def releaseRepoUrl = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl;
+println '+ TARGET REPO: ' + releaseRepoUrl
+
+repositories {
+    mavenCentral();
+}
+
+dependencies {
+    runtimeOnly group: 'io.grpc', name: 'grpc-netty-shaded', version: '1.60.0';
+    implementation group: 'io.grpc', name: 'grpc-protobuf', version: '1.60.0';
+    implementation group: 'io.grpc', name: 'grpc-stub', version: '1.60.0';
+    compileOnly group: 'org.apache.tomcat', name: 'annotations-api', version: '6.0.53'; // necessary for Java 9+
+}
+
+ext {
+    pomGroupId = group
+    pomVersion = version
+    pomArtifactId = "graphedit-protobuf"
+    pomArtifactName = "graphedit-protobuf"
+    jdkCompileVersion = 17
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.24.0";
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.60.0';
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+sourceCompatibility = "${jdkCompileVersion}"
+targetCompatibility = "${jdkCompileVersion}"
+
+java {
+    withJavadocJar();
+}
+
+javadoc {
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = "${pomGroupId}"
+            artifactId = "${pomArtifactId}"
+            version = "${pomVersion}"
+            from components.java
+            pom {
+                name = "${pomArtifactId}"
+                description = 'TODO'
+                url = 'https://www.gtz.dk'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'sillydan1'
+                        name = 'Asger Gitz-Johansen'
+                        email = 'asger.gitz@hotmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/sillydan1/graphedit-protobuf.git'
+                    developerConnection = 'scm:git:ssh://github.com/sillydan1/graphedit-protobuf.git'
+                    url = 'https://github.com/sillydan1/graphedit-protobuf/'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "OSSRH"
+            url = releaseRepoUrl
+            credentials {
+                username = findProperty("ossrhUsername")
+                password = findProperty("ossrhPassword")
+            }
+        }
+    }
+}
+
+signing {
+    def signingKey = findProperty("signingKey") ?: System.getenv("GPG_SIGNING_KEY")
+    def signingPassword = findProperty("signingPassword") ?: System.getenv("GPG_SIGNING_PASSWORD")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
+}

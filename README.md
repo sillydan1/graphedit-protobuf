@@ -25,3 +25,13 @@ This means you can depend on this project using [CPM](https://github.com/cpm-cma
 cmake -S . -B Release -DCMAKE_BUILD_TYPE=Release
 cmake --build Release
 ```
+
+### Java
+This project can be built using gradle.
+This means you can depend on this project by simply adding a dependency to your `build.gradle` (remember to use the latest version):
+```gradle
+dependencies {
+    implementation group: 'dk.gtz.graphedit', name: 'graphedit-protobuf', version: '1.0.0';
+    implementation group: 'io.grpc', name: 'grpc-stub', version: '1.60.0';
+}
+```
