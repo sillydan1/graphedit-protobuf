@@ -21,8 +21,11 @@ service LanguageServer {
     rpc BufferCreated(Buffer) returns (Empty) {}
     // When a file (of the associated syntax) is deleted
     rpc BufferDeleted(Buffer) returns (Empty) {}
-    // Handle model diffs to the server.
+    // Handle model diffs sent to the server. Will only be called if te server reports diffs capability.
     rpc HandleDiff(Diff) returns (Empty) {}
+    // Handle the full buffer change instead of a diff.
+    // This will be used as a backup if the language server doesn't provide the CAPABILITY_DIFFS capability.
+    rpc HandleChange(Buffer) returns (Empty) {}
 
     // Open a stream of diagnostics. The server should provide the full list of diagnostics every time it changes.
     rpc GetDiagnostics(Empty) returns (stream DiagnosticsList) {}
